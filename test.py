@@ -1,4 +1,4 @@
-from main2 import (
+from dlucheck import (
     FInfo, TInfo, Common,
     def_condition, find_related_fields)
 
