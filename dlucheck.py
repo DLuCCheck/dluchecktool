@@ -78,15 +78,7 @@ class Common:
         return f'Common({self.fields})' 
 
 
-# Helper
-# Check if fields are valid, find related fields and crosscheck
-# In construction...
-class THandler:
-    def __init__(self, t1: TInfo, t2: TInfo, common: Common, con2):
-        pass
-
-
-def find_related_fields(t1: TInfo, t2: TInfo, common: Common, r1: tuple):
+def create_related_rows_query(t1: TInfo, t2: TInfo, common: Common, r1: tuple):
     f1_names = list(t1.fields.keys())
     f2_names = list(t1.fields.keys())
     cfield_names =  list(common.fields.keys())
@@ -111,12 +103,6 @@ def find_related_fields(t1: TInfo, t2: TInfo, common: Common, r1: tuple):
     condition_vals = t2.create_conditions(
         [t2.cnames[k] for k in valid_fields], t2_row
     )
-    # condition_vals: list[tuple] = []
-    # for cf_name in valid_fields:
-    #     # F1 field
-    #     f2 = t2.fields[t2.cnames[cf_name]]
-    #     f2_index = f2_names.index(f2.name)
-    #     condition_vals.append(f2.condition_fnc(t2_row[f2_index]))
 
     # Separate conditions and values into tuples
     conditions: tuple = ()
@@ -132,4 +118,26 @@ def find_related_fields(t1: TInfo, t2: TInfo, common: Common, r1: tuple):
     columns = ', '.join(t2.fields.keys())
     query = f'SELECT rowid, {columns} FROM {t2.name} WHERE {condition}'
 
-    return query
+    return query, values
+
+
+# Helper function, links tables with database connections
+class THandler:
+    def __init__(self, t1: TInfo, t2: TInfo, common: Common, con1, con2):
+        self.t1 = t1
+        self.t2 = t2
+        self.common = common
+        self.cursor1 = con1.cursor()
+        self.cursor2 = con2.cursor()
+
+    # find fields similar to row in table2
+    def find_related_rows(self, row):
+        query, values = create_related_rows_query(t1, t2, common, row)
+    
+        return [r for r in self.cursor1.executte(query, values)]
+
+    # Check for duplicate rows or row with `incongruencies`
+    def crosscheck(self):
+        pass
+
+
