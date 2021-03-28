@@ -78,6 +78,25 @@ class Common:
         return f'Common({self.fields})' 
 
 
+"""
+Create query to find the `r1` row from the `t1` table inside the `t2` table.
+
+Parameters
+----------
+t1 : TInfo
+    `r1` table's info
+t2 : TInfo
+    Table to query for similar rows to `r1`
+common : Common
+    common format
+r1 : tuple
+    Row to query for
+
+Returns
+-------
+str
+    Query and values to search for the `r1` row
+"""
 def create_related_rows_query(t1: TInfo, t2: TInfo, common: Common, r1: tuple):
     f1_names = list(t1.fields.keys())
     f2_names = list(t1.fields.keys())
@@ -123,6 +142,8 @@ def create_related_rows_query(t1: TInfo, t2: TInfo, common: Common, r1: tuple):
 
 # Helper function, links tables with database connections
 class THandler:
+    import sqlite3
+
     def __init__(self, t1: TInfo, t2: TInfo, common: Common, con1, con2):
         self.t1 = t1
         self.t2 = t2
@@ -130,13 +151,33 @@ class THandler:
         self.cursor1 = con1.cursor()
         self.cursor2 = con2.cursor()
 
-    # find fields similar to row in table2
-    def find_related_rows(self, row):
-        query, values = create_related_rows_query(t1, t2, common, row)
-    
-        return [r for r in self.cursor1.executte(query, values)]
+    """
+    Find rows similar to `row` in table
 
-    # Check for duplicate rows or row with `incongruencies`
+    Parameters
+    ----------
+    row : tuple
+        Row to find similar fields with
+    table : int
+        The number of the `row`'s table. This can be either 0 or 1
+        which will match with self.t1 and self.t2 respectively
+
+    Returns
+    -------
+    List
+        List of similar rows to `row` in the `table` table
+    """
+    def find_related_rows(self, row: tuple, table: int = 0):
+        t1 = self.t1 if table == 0 else self.t2
+        t2 = self.t2 if table == 0 else self.t1
+        cursor = self.cursor2 if table == 0 else self.cursor1
+
+        query, values = create_related_rows_query(t1, t2,
+                                                  self.common, row)
+    
+        return [r for r in cursor.execute(query, values)]
+
+    # Check for duplicate rows or rows with `incongruencies`
     def crosscheck(self):
         pass
 
