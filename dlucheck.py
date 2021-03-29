@@ -26,7 +26,7 @@ def def_condition(fval: Any) -> tuple[str, tuple]:
     return ('{0} = ?', (fval, ))
 
 
-class FInfo:
+class FieldFormat:
     """
     Attributes
     ----------
@@ -39,20 +39,17 @@ class FInfo:
     _type : str
         Field's type
 
-    condition_fnc : function
+    query_fnc : function
         Function that takes a field's value as argument and
         returns a tuple with a query and said query values.
 
         Example
         -------
-        # Valid condition function
-        def search_by_words(full_name):
-            names = full_name.split()
+        # Return a query to search for rows which contains all words in `words`
+        def search_by_words_all(words):
             # Here {0} stands for the field's name
-            query = ' AND '.join(['{0} LIKE ?' for name in names])
-            return (query, tuple([f'%{name}%' for name in names]))
-
-
+            query = ' AND '.join(['{0} LIKE ?' for word in words])
+            return (query, tuple([f'%{word}%' for word in words]))
 
     norm_fnc : function
         Function that takes a field's value and converts it
@@ -63,43 +60,43 @@ class FInfo:
         and converts it to this format
     """
     def __init__(self, names: list[str], _type: str,
-                 condition_fnc: Callable[[Any], tuple] = def_condition,
+                 query_fnc: Callable[[Any], tuple] = def_condition,
                  norm_fnc: Callable[[Any], Any] = lambda a : a,
                  denorm_fnc: Callable[[Any], Any] = lambda a : a):
         self.name = names[0]
         self.common_name = names[0] if len(names) == 1 else names[1]
         self._type = _type
-        self.condition_fnc = condition_fnc
+        self.query_fnc = query_fnc
         self.norm_fnc = norm_fnc
         self.denorm_fnc = denorm_fnc
 
     def __repr__(self):
-        return f'FInfo({self.name}, {self.common_name}, {self._type})' 
+        return f'FieldFormat({self.name}, {self.common_name}, {self._type})' 
 
 
-class TInfo:
-    def __init__(self, name: str, fields: list[FInfo]):
+class TableFormat:
+    def __init__(self, name: str, fields: list[FieldFormat]):
         self.name = name
         # Make field dict
-        self.fields: dict[str, FInfo] = {}
+        self.fields: dict[str, FieldFormat] = {}
         self.cnames: dict[str, str] = {}
         for field in fields:
             self.fields[field.name] = field
             self.cnames[field.common_name] = field.name
 
-    def create_conditions(self, fields, row):
+    def create_queries(self, fields, row):
         field_names = list(self.fields.keys())
-        condition_vals: list[tuple] = []
+        query_vals: list[tuple] = []
         for k in fields:
             f = self.fields[k]
             f2_index = field_names.index(f.name)
             # print(f2_index, f.name)
-            condition_vals.append(f.condition_fnc(row[f2_index]))
+            query_vals.append(f.query_fnc(row[f2_index]))
 
-        return condition_vals
+        return query_vals
 
     def __repr__(self):
-        return f'TInfo({self.name}, {self.fields}, {self.cnames})' 
+        return f'TableFormat({self.name}, {self.fields}, {self.cnames})' 
 
 class Common:
     def __init__(self, fields: list[tuple]):
@@ -116,9 +113,9 @@ Create a query to search the `r1` row from the `t1` table inside the `t2` table.
 
 Parameters
 ----------
-t1 : TInfo
+t1 : TableFormat
     `r1` table's info
-t2 : TInfo
+t2 : TableFormat
     Table to query for similar rows to `r1`
 common : Common
     common format
@@ -130,7 +127,8 @@ Returns
 str
     Query and values to search for the `r1` row
 """
-def create_related_rows_query(t1: TInfo, t2: TInfo, common: Common, r1: tuple):
+def create_related_rows_query(t1: TableFormat, t2: TableFormat,
+                              common: Common, r1: tuple):
     f1_names = list(t1.fields.keys())
     f2_names = list(t1.fields.keys())
     cfield_names =  list(common.fields.keys())
@@ -152,14 +150,14 @@ def create_related_rows_query(t1: TInfo, t2: TInfo, common: Common, r1: tuple):
         t2_row += (t2_f,)
 
     # List of conditions and values
-    condition_vals = t2.create_conditions(
+    query_vals = t2.create_queries(
         [t2.cnames[k] for k in valid_fields], t2_row
     )
 
     # Separate conditions and values into tuples
     conditions: tuple = ()
     values: tuple = ()
-    for i, (c, v) in enumerate(condition_vals):
+    for i, (c, v) in enumerate(query_vals):
         fname = t2.cnames[valid_fields[i]]
 
         conditions += (c.format(fname),)
@@ -173,11 +171,17 @@ def create_related_rows_query(t1: TInfo, t2: TInfo, common: Common, r1: tuple):
     return query, values
 
 
+"""Transform table from the `table` TableFormat to common format
+"""
+def normalize_table(table: TableFormat, common: Common, con):
+    pass
+
+
 # Helper function, links tables with database connections
 class THandler:
     import sqlite3
 
-    def __init__(self, t1: TInfo, t2: TInfo, common: Common, con1, con2):
+    def __init__(self, t1: TableFormat, t2: TableFormat, common: Common, con1, con2):
         self.t1 = t1
         self.t2 = t2
         self.common = common
@@ -210,11 +214,16 @@ class THandler:
     
         return [r for r in cursor.execute(query, values)]
 
+    """
+    Search for duplicates
+    """
     def find_duplicates(self, row: tuple, table: int = 0):
         pass
 
-    # Check for duplicate rows or rows with `incongruencies`
+    """
+    Run a user define function(Machine Learning if necessary) for each
+    normalized pair of values in table1 and table2.
+    """
     def crosscheck(self):
         pass
-
 
