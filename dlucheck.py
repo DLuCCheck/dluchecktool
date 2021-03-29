@@ -27,6 +27,41 @@ def def_condition(fval: Any) -> tuple[str, tuple]:
 
 
 class FInfo:
+    """
+    Attributes
+    ----------
+    name : str
+        Field name
+
+    common_name : str
+        Field's common name
+
+    _type : str
+        Field's type
+
+    condition_fnc : function
+        Function that takes a field's value as argument and
+        returns a tuple with a query and said query values.
+
+        Example
+        -------
+        # Valid condition function
+        def search_by_words(full_name):
+            names = full_name.split()
+            # Here {0} stands for the field's name
+            query = ' AND '.join(['{0} LIKE ?' for name in names])
+            return (query, tuple([f'%{name}%' for name in names]))
+
+
+
+    norm_fnc : function
+        Function that takes a field's value and converts it
+        from it's format to the common format.
+
+    denorm_fnc : function
+        Functino that takes field's value in the common format
+        and converts it to this format
+    """
     def __init__(self, names: list[str], _type: str,
                  condition_fnc: Callable[[Any], tuple] = def_condition,
                  norm_fnc: Callable[[Any], Any] = lambda a : a,
@@ -34,8 +69,6 @@ class FInfo:
         self.name = names[0]
         self.common_name = names[0] if len(names) == 1 else names[1]
         self._type = _type
-        # TODO:
-        # Change the way condition functions work
         self.condition_fnc = condition_fnc
         self.norm_fnc = norm_fnc
         self.denorm_fnc = denorm_fnc
@@ -79,7 +112,7 @@ class Common:
 
 
 """
-Create query to find the `r1` row from the `t1` table inside the `t2` table.
+Create a query to search the `r1` row from the `t1` table inside the `t2` table.
 
 Parameters
 ----------
@@ -148,8 +181,8 @@ class THandler:
         self.t1 = t1
         self.t2 = t2
         self.common = common
-        self.cursor1 = con1.cursor()
-        self.cursor2 = con2.cursor()
+        self.cursor1 = con1.cursor() if con1 is not None else None
+        self.cursor2 = con2.cursor() if con2 is not None else None
 
     """
     Find rows similar to `row` in table
@@ -176,6 +209,9 @@ class THandler:
                                                   self.common, row)
     
         return [r for r in cursor.execute(query, values)]
+
+    def find_duplicates(self, row: tuple, table: int = 0):
+        pass
 
     # Check for duplicate rows or rows with `incongruencies`
     def crosscheck(self):
