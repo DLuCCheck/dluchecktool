@@ -13,6 +13,8 @@ from dataclasses import dataclass
 from functools import reduce
 import sqlite3
 
+from table import Field, Common, Table
+
 
 SQLITE3_Types: dict[str, str] = {
     "int": "INTEGER",
@@ -26,96 +28,14 @@ def def_condition(fval: Any) -> tuple[str, tuple]:
     return ('{0} = ?', (fval, ))
 
 
-class FieldFormat:
-    """
-    Attributes
-    ----------
-    name : str
-        Field name
-
-    common_name : str
-        Field's common name
-
-    _type : str
-        Field's type
-
-    query_fnc : function
-        Function that takes a field's value as argument and
-        returns a tuple with a query and said query values.
-
-        Example
-        -------
-        # Return a query to search for rows which contains all words in `words`
-        def search_by_words_all(words):
-            # Here {0} stands for the field's name
-            query = ' AND '.join(['{0} LIKE ?' for word in words])
-            return (query, tuple([f'%{word}%' for word in words]))
-
-    norm_fnc : function
-        Function that takes a field's value and converts it
-        from it's format to the common format.
-
-    denorm_fnc : function
-        Functino that takes field's value in the common format
-        and converts it to this format
-    """
-    def __init__(self, names: list[str], _type: str,
-                 query_fnc: Callable[[Any], tuple] = def_condition,
-                 norm_fnc: Callable[[Any], Any] = lambda a : a,
-                 denorm_fnc: Callable[[Any], Any] = lambda a : a):
-        self.name = names[0]
-        self.common_name = names[0] if len(names) == 1 else names[1]
-        self._type = _type
-        self.query_fnc = query_fnc
-        self.norm_fnc = norm_fnc
-        self.denorm_fnc = denorm_fnc
-
-    def __repr__(self):
-        return f'FieldFormat({self.name}, {self.common_name}, {self._type})' 
-
-
-class TableFormat:
-    def __init__(self, name: str, fields: list[FieldFormat]):
-        self.name = name
-        # Make field dict
-        self.fields: dict[str, FieldFormat] = {}
-        self.cnames: dict[str, str] = {}
-        for field in fields:
-            self.fields[field.name] = field
-            self.cnames[field.common_name] = field.name
-
-    def create_queries(self, fields, row):
-        field_names = list(self.fields.keys())
-        query_vals: list[tuple] = []
-        for k in fields:
-            f = self.fields[k]
-            f2_index = field_names.index(f.name)
-            # print(f2_index, f.name)
-            query_vals.append(f.query_fnc(row[f2_index]))
-
-        return query_vals
-
-    def __repr__(self):
-        return f'TableFormat({self.name}, {self.fields}, {self.cnames})' 
-
-class Common:
-    def __init__(self, fields: list[tuple]):
-        self.fields: dict[str, tuple] = {}
-        for field in fields:
-            self.fields[field[0]] = field[1:]
-
-    def __repr__(self):
-        return f'Common({self.fields})' 
-
-
 """
 Create a query to search the `r1` row from the `t1` table inside the `t2` table.
 
 Parameters
 ----------
-t1 : TableFormat
+t1 : Table
     `r1` table's info
-t2 : TableFormat
+t2 : Table
     Table to query for similar rows to `r1`
 common : Common
     common format
@@ -127,7 +47,7 @@ Returns
 str
     Query and values to search for the `r1` row
 """
-def create_related_rows_query(t1: TableFormat, t2: TableFormat,
+def create_related_rows_query(t1: Table, t2: Table,
                               common: Common, r1: tuple):
     f1_names = list(t1.fields.keys())
     f2_names = list(t1.fields.keys())
@@ -171,9 +91,9 @@ def create_related_rows_query(t1: TableFormat, t2: TableFormat,
     return query, values
 
 
-"""Transform table from the `table` TableFormat to common format
+"""Transform table from the `table` Table to common format
 """
-def normalize_table(table: TableFormat, common: Common, con):
+def normalize_table(table: Table, common: Common, con):
     pass
 
 
@@ -181,7 +101,7 @@ def normalize_table(table: TableFormat, common: Common, con):
 class THandler:
     import sqlite3
 
-    def __init__(self, t1: TableFormat, t2: TableFormat, common: Common, con1, con2):
+    def __init__(self, t1: Table, t2: Table, common: Common, con1, con2):
         self.t1 = t1
         self.t2 = t2
         self.common = common
