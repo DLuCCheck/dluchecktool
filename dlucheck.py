@@ -24,10 +24,6 @@ SQLITE3_Types: dict[str, str] = {
 }
 
 
-def def_condition(fval: Any) -> tuple[str, tuple]:
-    return ('{0} = ?', (fval, ))
-
-
 """
 Create a query to search the `r1` row from the `t1` table inside the `t2` table.
 
@@ -90,25 +86,7 @@ def create_related_rows_query(t1: Table, t2: Table,
 
     return query, values
 
-
-"""Transform table from the `table` Table to common format
 """
-def normalize_table(table: Table, common: Common, con):
-    pass
-
-
-# Helper function, links tables with database connections
-class THandler:
-    import sqlite3
-
-    def __init__(self, t1: Table, t2: Table, common: Common, con1, con2):
-        self.t1 = t1
-        self.t2 = t2
-        self.common = common
-        self.cursor1 = con1.cursor() if con1 is not None else None
-        self.cursor2 = con2.cursor() if con2 is not None else None
-
-    """
     Find rows similar to `row` in table
 
     Parameters
@@ -123,27 +101,32 @@ class THandler:
     -------
     List
         List of similar rows to `row` in the `table` table
-    """
-    def find_related_rows(self, row: tuple, table: int = 0):
-        t1 = self.t1 if table == 0 else self.t2
-        t2 = self.t2 if table == 0 else self.t1
-        cursor = self.cursor2 if table == 0 else self.cursor1
+"""
+def find_related_rows(t1: Table, t2: Table, common: Common, row: tuple):
+    cursor = t2.con.cursor();
 
-        query, values = create_related_rows_query(t1, t2,
-                                                  self.common, row)
-    
-        return [r for r in cursor.execute(query, values)]
+    query, values = create_related_rows_query(t1, t2,
+                                              common, row)
 
-    """
-    Search for duplicates
-    """
-    def find_duplicates(self, row: tuple, table: int = 0):
-        pass
+    return [r for r in cursor.execute(query, values)]
 
-    """
-    Run a user define function(Machine Learning if necessary) for each
-    normalized pair of values in table1 and table2.
-    """
-    def crosscheck(self):
-        pass
+
+"""Transform table from the `table` Table to common format
+"""
+def normalize_table(table: Table, common: Common, con):
+    pass
+
+
+"""
+Search for duplicates
+"""
+def find_duplicates(self, row: tuple, table: int = 0):
+    pass
+
+"""
+Run a user define function(Machine Learning if necessary) for each
+normalized pair of values in table1 and table2.
+"""
+def crosscheck(self):
+    pass
 
