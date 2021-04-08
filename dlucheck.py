@@ -1,5 +1,5 @@
 """
-    Library for table serialization && crosschecking
+Library for table serialization && crosschecking
 """
 # NOTE:
 # Varius optimizations could be made to make this code faster.
@@ -87,20 +87,20 @@ def create_related_rows_query(t1: Table, t2: Table,
     return query, values
 
 """
-    Find rows similar to `row` in table
+Find rows similar to `row` in table
 
-    Parameters
-    ----------
-    row : tuple
-        Row to find similar fields with
-    table : int
-        The number of the `row`'s table. This can be either 0 or 1
-        which will match with self.t1 and self.t2 respectively
+Parameters
+----------
+row : tuple
+    Row to find similar fields with
+table : int
+    The number of the `row`'s table. This can be either 0 or 1
+    which will match with self.t1 and self.t2 respectively
 
-    Returns
-    -------
-    List
-        List of similar rows to `row` in the `table` table
+Returns
+-------
+List
+    List of similar rows to `row` in the `table` table
 """
 def find_related_rows(t1: Table, t2: Table, common: Common, row: tuple):
     cursor = t2.con.cursor();
@@ -111,22 +111,31 @@ def find_related_rows(t1: Table, t2: Table, common: Common, row: tuple):
     return [r for r in cursor.execute(query, values)]
 
 
-"""Transform table from the `table` Table to common format
-"""
-def normalize_table(table: Table, common: Common, con):
-    pass
+def array_find_similar(array: np.ndarray, row, common: Common, similarity: float):
+    candidates: list[np.void] = [cand for cand in array
+                                 if common.check_fnc(cand, row) >= similarity] 
+    return candidates
 
 
+"""Normalize tables into a `common` format, save them into numpy arrays
+provide functions to crosscheck, and search for duplicates and incongruencies
 """
-Search for duplicates
-"""
-def find_duplicates(self, row: tuple, table: int = 0):
-    pass
+class TConnection:
+    def __init__(self, tables: list[Table], common: Common):
+        self.tables = tables
+        # TODO: change to numpy.memmap
+        self.normalized: list[np.ndarray] = []
+        self.common = common
 
-"""
-Run a user define function(Machine Learning if necessary) for each
-normalized pair of values in table1 and table2.
-"""
-def crosscheck(self):
-    pass
+    """Search for duplicates
+    """
+    def find_duplicates(self, row: tuple):
+        pass
+
+    """
+    Run a user define function(Machine Learning if necessary) for each
+    normalized pair of values in table1 and table2.
+    """
+    def crosscheck(self):
+        pass
 
