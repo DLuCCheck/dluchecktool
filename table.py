@@ -47,6 +47,9 @@ class Field:
     denorm_fnc : function
         Functino that takes field's value in the common format
         and converts it to this format
+
+    check_fnc : function
+        Function that compares to values.
     """
     def __init__(self, names: list[str], _type: str,
                  query_fnc: Callable[[Any], tuple] = def_query_fnc,
@@ -63,22 +66,56 @@ class Field:
         return f'Field({self.name}, {self.common_name}, {self._type})' 
 
 
+# TODO:
+# - Add CommonField class
 class Common:
+    # TODO: potentially change type to np.void
+    @staticmethod
+    def __def_check_fnc(a: Any, b: Any) -> float:
+        return 0
+
     def __init__(self, fields: list[tuple]):
         self.fields: dict[str, tuple] = {}
+        self.check_fncs: list[Callable[[Any, Any], float]] = []
         for field in fields:
-            self.fields[field[0]] = field[1:]
+            self.fields[field[0]] = field[1:3]
+            self.check_fncs\
+                .append(field[3] if len(field) == 4 else Common.__def_check_fnc)
+
+    def check_fnc(self, a: Any, b: Any) -> float:
+        fields = list(self.fields.values())
+        similarity: float = 0
+        for i, check_fnc in enumerate(self.check_fncs):
+            similarity += check_fnc(a[i], b[i]) * fields[i][1]
+
+        return similarity;
 
     def __repr__(self):
         return f'Common({self.fields})' 
 
 
+"""
+Contains Table information
+
+Parameters
+----------
+
+name : str
+    Table's name
+fields : list[Field]
+    Contains all relevant fields in the table
+con : sqlite3.Connection, optional
+    Connection to the database in question or None
+array: np.memmap, optional
+    Array containing all the table's data or None
+"""
 class Table:
-    def __init__(self, name: str, fields: list[Field], con):
+    def __init__(self, name: str, fields: list[Field], con=None, array=None):
         # TODO:
         # Check if table named `name` exists in the `con` database
         self.name = name
         self.con = con
+        self.array = array
 
         # TODO:
         # Check if fields are in the `name` table
@@ -101,7 +138,8 @@ class Table:
         return cur.fetchone()
 
     # TODO:
-    # Add limit
+    # - Add a way to define a limit
+    # - Use numpy.mmemap for big arrays
     def to_numpy_array(self) -> np.ndarray:
         dtype = np.dtype(
             [(f.name, PTNDType[f._type]) for f in self.fields.values()])
@@ -120,7 +158,10 @@ class Table:
 
         return arr;
 
+    """Save all the table's rows into a numpy array
+    """
     def to_normalized_numpy_array(self, common: Common) -> np.ndarray:
+        # Create structured array
         dtype = np.dtype(
             [(k, PTNDType[common.fields[k][0]]) for k, v in self.cnames.items()])
 
