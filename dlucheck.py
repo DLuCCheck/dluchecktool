@@ -112,8 +112,12 @@ def find_related_rows(t1: Table, t2: Table, common: Common, row: tuple):
 
 
 def array_find_similar(array: np.ndarray, row, common: Common, similarity: float):
-    candidates: list[np.void] = [cand for cand in array
-                                 if common.check_fnc(cand, row) >= similarity] 
+    candidates: list[tuple] = [] 
+
+    for cand in array:
+        s = common.check_fnc(cand, row)
+        if s >= similarity:
+            candidates.append((cand, s))
     return candidates
 
 
