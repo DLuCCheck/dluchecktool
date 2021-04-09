@@ -140,6 +140,11 @@ class Table:
 
         return cur.fetchone()
 
+    def from_excel_table(self, path: str) -> np.ndarray:
+        import pandas as pd     # type: ignore
+        table_array = pd.read_excel(path, dtype=self.dtype).to_records()
+        return np.array(table_array)
+
     # TODO:
     # - Add a way to define a limit
     # - Use numpy.mmemap for big arrays
