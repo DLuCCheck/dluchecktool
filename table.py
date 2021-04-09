@@ -115,7 +115,8 @@ class Table:
         # Check if table named `name` exists in the `con` database
         self.name = name
         self.con = con
-        self.array = array
+        self.data = array
+        self.norm_data = None
 
         # TODO:
         # Check if fields are in the `name` table
@@ -124,6 +125,8 @@ class Table:
         for field in fields:
             self.fields[field.name] = field
             self.cnames[field.common_name] = field.name
+
+        self.dtype = np.dtype([(f.name, PTNDType[f._type]) for f in self.fields.values()])
 
     def fetch_num_rows(self, use_rowid: bool = True):
         # Fast query but requires rowid
@@ -141,9 +144,6 @@ class Table:
     # - Add a way to define a limit
     # - Use numpy.mmemap for big arrays
     def to_numpy_array(self) -> np.ndarray:
-        dtype = np.dtype(
-            [(f.name, PTNDType[f._type]) for f in self.fields.values()])
-
         num_rows = self.fetch_num_rows() 
         if num_rows is None:
             print(f"Failed to fetch `{self.name}` table's number of rows")
@@ -152,10 +152,11 @@ class Table:
 
         fields = ', '.join(self.fields.keys())
         query = f'SELECT {fields} FROM {self.name}'
-        arr = np.empty(num_rows, dtype=dtype)
+        arr = np.empty(num_rows, dtype=self.dtype)
         for i, row in enumerate(cur.execute(query)):
             arr[i] = row
 
+        self.data = arr;
         return arr;
 
     """Save all the table's rows into a numpy array
