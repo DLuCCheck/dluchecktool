@@ -126,7 +126,8 @@ class Table:
             self.fields[field.name] = field
             self.cnames[field.common_name] = field.name
 
-        self.dtype = np.dtype([(f.name, PTNDType[f._type]) for f in self.fields.values()])
+        self._dtypes = [(f.name, PTNDType[f._type]) for f in self.fields.values()]
+        self.dtype = np.dtype(self._dtypes)
 
     def fetch_num_rows(self, use_rowid: bool = True):
         # Fast query but requires rowid
@@ -142,7 +143,13 @@ class Table:
 
     def from_excel_table(self, path: str) -> np.ndarray:
         import pandas as pd     # type: ignore
-        table_array = pd.read_excel(path, dtype=self.dtype).to_records()
+        column_dtypes = {name: dt for name, dt in self._dtypes}
+
+        names = self.fields.keys()
+        data_frame = pd.read_excel(path, header=None, names=names)
+
+        table_array = data_frame.to_records(index=False,
+                                            column_dtypes=column_dtypes)
         return np.array(table_array)
 
     # TODO:
