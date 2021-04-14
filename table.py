@@ -72,7 +72,7 @@ class Common:
     # TODO: potentially change type to np.void
     @staticmethod
     def __def_check_fnc(a: Any, b: Any) -> float:
-        return 0
+        return a == b
 
     def __init__(self, fields: list[tuple]):
         self.fields: dict[str, tuple] = {}
@@ -97,7 +97,7 @@ class Common:
 """
 Contains Table information
 
-Parameters
+Attributes
 ----------
 
 name : str
@@ -116,7 +116,7 @@ class Table:
         self.name = name
         self.con = con
         self.data = array
-        self.norm_data = None
+        self.norm_data: Any = None
 
         # TODO:
         # Check if fields are in the `name` table
@@ -126,8 +126,8 @@ class Table:
             self.fields[field.name] = field
             self.cnames[field.common_name] = field.name
 
-        self._dtypes = [(f.name, PTNDType[f._type]) for f in self.fields.values()]
-        self.dtype = np.dtype(self._dtypes)
+        self.dtype = np.dtype([(f.name, PTNDType[f._type])
+                               for f in self.fields.values()])
 
     def fetch_num_rows(self, use_rowid: bool = True):
         # Fast query but requires rowid
@@ -143,14 +143,20 @@ class Table:
 
     def from_excel_table(self, path: str) -> np.ndarray:
         import pandas as pd     # type: ignore
-        column_dtypes = {name: dt for name, dt in self._dtypes}
+        # column_dtypes = self.dtype.fields
+        dtypes = {n: t.str for n, (t, s) in self.dtype.fields.items()} # type: ignore
 
         names = self.fields.keys()
-        data_frame = pd.read_excel(path, header=None, names=names)
+        data_frame = pd.read_excel(path, header=None, names=names,
+                                   dtype=dtypes)
 
         table_array = data_frame.to_records(index=False,
-                                            column_dtypes=column_dtypes)
-        return np.array(table_array)
+                                            column_dtypes=dtypes)
+
+        self.data = np.array(table_array)
+        self.norm_data = self.data # type: ignore
+        return self.data
+        # return np.asarray(table_array, dtype=column_dtypes) # type: ignore
 
     # TODO:
     # - Add a way to define a limit
@@ -192,7 +198,24 @@ class Table:
             arr[i] = tuple([self.fields[fnames[i]].norm_fnc(field)
                       for i, field in enumerate(row)])
 
+        self.norm_data = arr
         return arr;
+
+    def find_all_similar(self, common: Common, sim: float):
+        data = self.norm_data
+
+        if data is None:
+            print("Warning: No table data available")
+            return
+
+        candidates: list[tuple[int, list[int]]] = []
+        # Really slow
+        for i, row in enumerate(data):
+            similar = find_similar_indices(data, row, common, sim)
+            if len(similar) > 0:
+                candidates.append((i, similar))
+
+        return candidates
 
     def create_queries(self, fields, row):
         field_names = list(self.fields.keys())
@@ -207,3 +230,57 @@ class Table:
 
     def __repr__(self):
         return f'Table({self.name}, {self.fields}, {self.cnames})' 
+
+
+def find_similar_indices(data: np.ndarray, row: tuple,
+                         common: Common, sim: float):
+    indices: list[int] = [] 
+
+    for i, cand in enumerate(data):
+        s = common.check_fnc(cand, row)
+        if s >= sim:
+            indices.append(i)
+    return indices
+
+
+def find_all_similar(data, common: Common, sim: float):
+    candidates: list[tuple[int, list[int]]] = []
+    # Really slow
+    for i, row in enumerate(data):
+        similar = find_similar_indices(data, row, common, sim)
+        if len(similar) > 0:
+            candidates.append((i, similar))
+
+    return candidates
+
+def find_similar(data: np.ndarray, row: tuple,
+                 common: Common, sim: float) -> np.ndarray:
+
+    dtype = data.dtype.descr + [('Similarity', np.float64)] # type: ignore
+    indices = find_similar_indices(data, row, common, sim)
+
+    candidates: np.ndarray = np.empty(len(indices), dtype=dtype)
+
+    for i, indx in enumerate(indices):
+        s = common.check_fnc(data[indx], row)
+        candidates[i] = tuple(data[indx]) + (round(s, 5),)
+    return candidates
+
+
+# On the works
+def find_duplicate_indices(array: np.ndarray, row: tuple, common: Common):
+    candidates = array
+    for i, (n, v) in enumerate(common.fields.items()):
+        if v[1] > 0.0:
+            candidates = candidates[np.where(candidates[n] == row[i])]
+
+    return candidates
+
+def find_duplicates(array: np.ndarray, row: tuple, common: Common):
+    candidates = array
+    for i, (n, v) in enumerate(common.fields.items()):
+        if v[1] > 0.0:
+            candidates = candidates[np.where(candidates[n] == row[i])]
+
+    return candidates
+
