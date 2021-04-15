@@ -111,16 +111,6 @@ def find_related_rows(t1: Table, t2: Table, common: Common, row: tuple):
     return [r for r in cursor.execute(query, values)]
 
 
-def array_find_similar(array: np.ndarray, row, common: Common, similarity: float):
-    candidates: list[tuple] = [] 
-
-    for cand in array:
-        s = common.check_fnc(cand, row)
-        if s >= similarity:
-            candidates.append((cand, s))
-    return candidates
-
-
 """Normalize tables into a `common` format, save them into numpy arrays
 provide functions to crosscheck, and search for duplicates and incongruencies
 """
