@@ -1,0 +1,22 @@
+{
+    "example1": [
+        {
+            "name": {
+                "type": "str",
+                "common": "Name"
+            },
+            "surname": {
+                "type": "str",
+                "common": "Surname"
+            },
+            "personal_code": {
+                "type": "str",
+                "common": "Personal Code"
+            },
+            "Address": {
+                "type": "str",
+                "common": "Address"
+            }
+        }
+    ]
+}
