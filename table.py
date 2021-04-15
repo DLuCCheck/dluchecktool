@@ -1,4 +1,5 @@
 from typing import Callable, Any
+import pandas as pd # type: ignore
 import numpy as np
 
 
@@ -284,3 +285,5 @@ def find_duplicates(array: np.ndarray, row: tuple, common: Common):
 
     return candidates
 
+def array_to_table(array: np.ndarray, excel_path: str):
+    pd.DataFrame(array).to_excel(excel_path, index=False)
