@@ -1,29 +1,67 @@
-## Problem
-A bank merger causes a bank to have to work with multiple tables in different
-but similar formats. There's no easy trustworthy way of linking rows in this
-tables.
+## What is DLucheck
+DLucheck is a table tool automated checking tool
+
+## How to use
+DLucheck is supposed to be used with table information and checks to be done to
+the table, the checks are sql queries. Additional logic can be added to then work
+with the data after the queries.
 
 
-## What we know
-Both tables should have related fields which should contain the same, or similar
-information.
+## Table info format
+Table info can be provided via a json file. Said json must look like this
+```
+"<table name>": {
+    "<field name>": {
+        /* Field's type, must be a valid sql type(e.g., text, integer, real) */
+        "type": "text",
 
+        /* Whether the field is a pickfield or not */
+        "is_pickfield": false
 
-## Solution
-We could serialize the two tables into a single format by:
-- specifying the types of the columns in the two related tables and the type we
-    desire them both to be.
-- Apply a function in the contents of each field to convert them to the format
-    that we want.
-- Specify a relationship metric between  rows, this can be done by defining how
-    likely are two fields to be related, then by checking each field in the
-    rows we can get the overall likelihood of two rows being related, from this
-    we can create a result table which contains the most likely related rows
-    values paired and their likelihood to be equal.
+        /* All the valid field values, only applies if field is pickfield */
+        "choices": []
+    }
+}
+```
 
-## Problems with the solution
-It's expensive both in memory and computationally as it requires to iterate
-through every row in two tables 
+## Checks format
+```
+"{
+    "<check name>": {
+        /* Whether this check must be run over all the table rows */
+        "repeat": false,
 
-We need a way to convert from tab a to tab b and from tab b to tab a.
+        /*
+        Select query to be performed
+        the brackets `{}` in the query refer to the value of the current field
+        */
+        "query": "\"Country\" = {} AND \"Region\" = {}"
 
+        /*
+        Success function can be one of:
+            - NO:
+                No success measurement
+
+            - ANY:
+                1 if the result of the query contains 1 or more rows
+                0 otherwise
+
+            - NONE:
+                1 if the result of the query contains 0 rows 1 otherwise.
+
+            - CUSTOM(): <In construction>
+                custom python function
+        */
+        "success": "NO"
+
+        /* function which returns a string to print as the result of the check */
+        "label": "results"
+    }
+}
+```
+
+## The plan
+As of yet the project is not finished, the plan is to make a graphical interface
+were an end user could easily set table information for tables and create
+`checks` and `queries` with a simple yet flexible UI, additionally, adding a way
+to run checks over multiple tables would be desired.
