@@ -1,0 +1,14 @@
+{
+    "check 1": {
+        "repeat": false,
+        "query": "\"Bank account residence\" = \"Latvia\" and \"Bank\" = \"DNB\"",
+        "success": "NO",
+        "label": "result"
+    },
+    "Same user": {
+        "repeat": true,
+        "query": "\"Name\" = {} AND \"Surname\" = {}",
+        "success": "NO",
+        "label": "results"
+    }
+}

@@ -1,34 +1,35 @@
 {
-    "common": [
-        {
-            "Name": {
-                "type": "str",
-                "is_pickfield": false,
-                "choices": [],
-                "importance": 0.0,
-                "check_fnc": "fuzz_compare"
-            },
-            "Surname": {
-                "type": "str",
-                "is_pickfield": false,
-                "choices": [],
-                "check_fnc": "fuzz_compare",
-                "importance": 0.0
-            },
-            "Personal Code": {
-                "type": "str",
-                "importance": 0.0,
-                "is_pickfield": false,
-                "choices": [],
-                "check_fnc": "fuzz_compare"
-            },
-            "Address": {
-                "type": "str",
-                "importance": 0.0,
-                "is_pickfield": false,
-                "choices": [],
-                "check_fnc": "fuzz_compare"
-            }
+    "table_name":
+    {
+        "Name": {
+            "type": "text",
+            "is_pickfield": false,
+            "choices": []
+        },
+        "Surname": {
+            "type": "text",
+            "is_pickfield": false,
+            "choices": []
+        },
+        "Personal Code": {
+            "type": "text",
+            "is_pickfield": false,
+            "choices": []
+        },
+        "Address": {
+            "type": "text",
+            "is_pickfield": false,
+            "choices": []
+        },
+        "Bank account residence": {
+            "type": "text",
+            "is_pickfield": false,
+            "choices": []
+        },
+        "Bank": {
+            "type": "text",
+            "is_pickfield": false,
+            "choices": []
         }
-    ]
+    }
 }
