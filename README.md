@@ -1,5 +1,5 @@
 ## What is DLucheck
-DLucheck is a table tool automated checking tool
+DLucheck is a table checking tool
 
 ## How to use
 DLucheck is supposed to be used with table information and checks to be done to
